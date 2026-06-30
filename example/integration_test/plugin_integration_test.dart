@@ -5,8 +5,25 @@ import 'package:xue_hua_speaker_earpiece_toggle/xue_hua_speaker_earpiece_toggle.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  // Verifies the plugin can read and switch routes on a real device or emulator.
-  // 在真机或模拟器上验证插件可以读取并切换路由。
+  Future<AudioOutputRoute> readRouteWithRetry(
+    XueHuaSpeakerEarpieceToggle plugin, {
+    AudioOutputRoute? expected,
+    int attempts = 3,
+    Duration delay = const Duration(milliseconds: 200),
+  }) async {
+    AudioOutputRoute? lastRoute;
+
+    for (var attempt = 0; attempt < attempts; attempt++) {
+      lastRoute = await plugin.getRoute();
+      if (expected == null || lastRoute == expected) {
+        return lastRoute;
+      }
+      await Future<void>.delayed(delay);
+    }
+
+    return lastRoute!;
+  }
+
   testWidgets('getRoute and setRoute integration test', (
     WidgetTester tester,
   ) async {
@@ -15,14 +32,35 @@ void main() {
     final initialRoute = await plugin.getRoute();
     expect(AudioOutputRoute.values.contains(initialRoute), isTrue);
 
+    if (initialRoute == AudioOutputRoute.external ||
+        initialRoute == AudioOutputRoute.unknown) {
+      return;
+    }
+
     final targetRoute = initialRoute == AudioOutputRoute.speaker
         ? AudioOutputRoute.earpiece
         : AudioOutputRoute.speaker;
 
-    await plugin.setRoute(targetRoute);
-    expect(await plugin.getRoute(), targetRoute);
+    final switchResult = await plugin.setRoute(targetRoute);
+    expect(switchResult.requested, targetRoute);
 
-    await plugin.setRoute(initialRoute);
-    expect(await plugin.getRoute(), initialRoute);
+    if (switchResult.applied == AudioOutputRoute.external) {
+      return;
+    }
+
+    expect(
+      await readRouteWithRetry(plugin, expected: switchResult.applied),
+      switchResult.applied,
+    );
+
+    final restoreResult = await plugin.setRoute(initialRoute);
+    if (restoreResult.applied == AudioOutputRoute.external) {
+      return;
+    }
+
+    expect(
+      await readRouteWithRetry(plugin, expected: restoreResult.applied),
+      restoreResult.applied,
+    );
   });
 }

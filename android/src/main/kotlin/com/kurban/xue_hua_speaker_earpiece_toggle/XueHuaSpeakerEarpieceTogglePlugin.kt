@@ -5,7 +5,6 @@ import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
-import io.flutter.plugin.common.MethodChannel.Result
 
 /** XueHuaSpeakerEarpieceTogglePlugin */
 class XueHuaSpeakerEarpieceTogglePlugin :
@@ -36,7 +35,7 @@ class XueHuaSpeakerEarpieceTogglePlugin :
 
     override fun onMethodCall(
         call: MethodCall,
-        result: Result
+        result: MethodChannel.Result
     ) {
         when (call.method) {
             "getRoute" -> result.success(controller.getRoute())
@@ -51,7 +50,7 @@ class XueHuaSpeakerEarpieceTogglePlugin :
         channel.setMethodCallHandler(null)
     }
 
-    private fun handleSetRoute(call: MethodCall, result: Result) {
+    private fun handleSetRoute(call: MethodCall, result: MethodChannel.Result) {
         val route = when (val rawRoute = call.argument<Any?>("route")) {
             is String -> rawRoute
             null -> {
@@ -62,6 +61,7 @@ class XueHuaSpeakerEarpieceTogglePlugin :
                 )
                 return
             }
+
             else -> {
                 result.error(
                     "INVALID_ARGUMENT",

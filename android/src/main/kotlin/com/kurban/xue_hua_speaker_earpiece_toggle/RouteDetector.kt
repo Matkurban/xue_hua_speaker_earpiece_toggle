@@ -36,6 +36,7 @@ internal class RouteDetector {
             AudioDeviceInfo.TYPE_BLE_HEADSET,
             AudioDeviceInfo.TYPE_USB_HEADSET,
             AudioDeviceInfo.TYPE_USB_DEVICE -> AudioRouteNames.EXTERNAL
+
             else -> AudioRouteNames.UNKNOWN
         }
     }

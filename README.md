@@ -17,7 +17,7 @@ Add the dependency to your app's `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  xue_hua_speaker_earpiece_toggle: ^1.0.0
+  xue_hua_speaker_earpiece_toggle: ^2.1.0
 ```
 
 Then run:
@@ -179,18 +179,45 @@ final toggle = XueHuaSpeakerEarpieceToggle();
 ```dart
 final route = await toggle.getRoute();
 
-if (route == AudioOutputRoute.speaker) {
-  // Audio is routed through the loudspeaker.
-} else {
-  // Audio is routed through the earpiece receiver.
+switch (route) {
+  case AudioOutputRoute.speaker:
+    // Audio is routed through the loudspeaker.
+    break;
+  case AudioOutputRoute.earpiece:
+    // Audio is routed through the earpiece receiver.
+    break;
+  case AudioOutputRoute.external:
+    // Wired headset, Bluetooth, AirPlay, etc.
+    break;
+  case AudioOutputRoute.unknown:
+    // Session inactive or route cannot be determined.
+    break;
 }
 ```
 
 ### Switch the route
 
 ```dart
-await toggle.setRoute(AudioOutputRoute.speaker);
-await toggle.setRoute(AudioOutputRoute.earpiece);
+final speakerResult = await toggle.setRoute(AudioOutputRoute.speaker);
+if (!speakerResult.available) {
+  // OS kept audio on [speakerResult.applied], e.g. external device priority.
+}
+
+final earpieceResult = await toggle.setRoute(AudioOutputRoute.earpiece);
+```
+
+Only `AudioOutputRoute.speaker` and `AudioOutputRoute.earpiece` are valid `setRoute` requests.
+
+### Listen for route changes
+
+```dart
+final subscription = toggle.onRouteChanged.listen((route) {
+  // Updates when the OS or another SDK changes the active output.
+  // Emits the current route immediately on subscription.
+});
+
+// Cancel when done.
+await subscription.cancel();
 ```
 
 ## API reference
@@ -201,15 +228,35 @@ await toggle.setRoute(AudioOutputRoute.earpiece);
 |-------|-------------|
 | `speaker` | Routes audio through the device loudspeaker. |
 | `earpiece` | Routes audio through the earpiece receiver. |
+| `external` | Wired headset, Bluetooth, AirPlay, or similar external output. |
+| `unknown` | Route cannot be determined (e.g. inactive audio session). |
+
+### `RouteResult`
+
+Returned by `setRoute()`.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `requested` | `AudioOutputRoute` | Route the caller asked for. |
+| `applied` | `AudioOutputRoute` | Route actually in effect after the platform applied the change. |
+| `available` | `bool` | Whether `requested` was fully applied (`applied == requested`). |
 
 ### `XueHuaSpeakerEarpieceToggle`
 
 | Method | Return type | Description |
 |--------|-------------|-------------|
 | `getRoute()` | `Future<AudioOutputRoute>` | Returns the current native audio route. |
-| `setRoute(AudioOutputRoute route)` | `Future<void>` | Switches the native audio route. |
+| `setRoute(AudioOutputRoute route)` | `Future<RouteResult>` | Switches the native audio route and reports what was applied. |
+| `onRouteChanged` | `Stream<AudioOutputRoute>` | Emits on subscription and when the OS changes the active route. |
 
 Both methods may throw `PlatformException` when the native platform rejects the request.
+
+## Migrating from 1.x to 2.0.0
+
+1. **`setRoute` now returns `RouteResult`** instead of `Future<void>`. Check `result.available` and use `result.applied` for UI state.
+2. **Handle new `AudioOutputRoute` values** — `external` and `unknown` can be returned from `getRoute()`. Only `speaker` and `earpiece` may be passed to `setRoute()`.
+3. **Re-read after switching** — when external devices are connected, `applied` may differ from `requested`.
+4. **Session behavior** — native implementations now avoid unnecessary session/mode changes and restore borrowed state on plugin detach where possible.
 
 ## Example app
 
@@ -226,19 +273,21 @@ flutter run
 
 ### Android
 
-- Uses `AudioManager.MODE_IN_COMMUNICATION` and `setSpeakerphoneOn(true|false)`.
-- `getRoute()` maps `isSpeakerphoneOn == true` to `speaker`, otherwise `earpiece`.
+- Detects routes via `communicationDevice` on API 31+, with legacy fallbacks for wired/BT headsets.
+- Applies speaker/earpiece using `setCommunicationDevice()` on API 34+ when available, otherwise `MODE_IN_COMMUNICATION` + `isSpeakerphoneOn`.
+- Saves and restores the previous `AudioManager.mode` on plugin detach when changed.
 
 ### iOS
 
-- Activates `AVAudioSession` with category `.playAndRecord` and option `.allowBluetooth`.
-- Uses `overrideOutputAudioPort(.speaker)` for speaker mode and `.none` to restore the earpiece route.
-- `getRoute()` inspects `currentRoute.outputs` and treats `.builtInSpeaker` as `speaker`.
+- Detects routes from `AVAudioSession.currentRoute` output ports (`speaker`, `earpiece`, `external`, `unknown`).
+- Configures the session only when category/mode mismatch or activation is required before applying a route.
+- Uses `overrideOutputAudioPort(.speaker)` for speaker mode and `.none` to clear speaker override.
+- Restores borrowed session configuration on plugin teardown when the plugin changed it.
 
 ## Known limitations
 
 - This plugin toggles **speaker vs earpiece**, not general media playback routing.
-- When wired or Bluetooth headsets are connected, the operating system may prioritize the external device. In that case `getRoute()` may still report `earpiece` even though audio is not coming from the bottom receiver.
+- When wired or Bluetooth headsets are connected, the operating system may prioritize the external device. `getRoute()` reports `external` and `setRoute()` returns `available: false` when the requested route could not be applied.
 - Other audio SDKs in the same app may override the session category or output port. Coordinate audio session ownership with those libraries.
 - Always validate route switching on real hardware during an active call or while audio is playing.
 

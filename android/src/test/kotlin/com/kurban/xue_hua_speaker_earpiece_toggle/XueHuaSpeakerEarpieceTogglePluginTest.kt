@@ -44,6 +44,8 @@ internal class XueHuaSpeakerEarpieceTogglePluginTest {
     @Test
     fun onMethodCall_getRoute_returnsSpeakerWhenSpeakerphoneOn() {
         `when`(mockAudioManager.isSpeakerphoneOn).thenReturn(true)
+        `when`(mockAudioManager.isBluetoothScoOn).thenReturn(false)
+        `when`(mockAudioManager.isWiredHeadsetOn).thenReturn(false)
 
         plugin.onMethodCall(MethodCall("getRoute", null), mockResult)
 
@@ -51,8 +53,21 @@ internal class XueHuaSpeakerEarpieceTogglePluginTest {
     }
 
     @Test
+    fun onMethodCall_getRoute_returnsExternalWhenHeadsetConnected() {
+        `when`(mockAudioManager.isSpeakerphoneOn).thenReturn(false)
+        `when`(mockAudioManager.isBluetoothScoOn).thenReturn(false)
+        `when`(mockAudioManager.isWiredHeadsetOn).thenReturn(true)
+
+        plugin.onMethodCall(MethodCall("getRoute", null), mockResult)
+
+        verify(mockResult).success("external")
+    }
+
+    @Test
     fun onMethodCall_getRoute_returnsEarpieceWhenSpeakerphoneOff() {
         `when`(mockAudioManager.isSpeakerphoneOn).thenReturn(false)
+        `when`(mockAudioManager.isBluetoothScoOn).thenReturn(false)
+        `when`(mockAudioManager.isWiredHeadsetOn).thenReturn(false)
 
         plugin.onMethodCall(MethodCall("getRoute", null), mockResult)
 
@@ -60,7 +75,11 @@ internal class XueHuaSpeakerEarpieceTogglePluginTest {
     }
 
     @Test
-    fun onMethodCall_setRoute_speaker_enablesSpeakerphone() {
+    fun onMethodCall_setRoute_speaker_returnsRouteResult() {
+        `when`(mockAudioManager.isSpeakerphoneOn).thenReturn(true)
+        `when`(mockAudioManager.isBluetoothScoOn).thenReturn(false)
+        `when`(mockAudioManager.isWiredHeadsetOn).thenReturn(false)
+
         plugin.onMethodCall(
             MethodCall("setRoute", mapOf("route" to "speaker")),
             mockResult
@@ -68,11 +87,20 @@ internal class XueHuaSpeakerEarpieceTogglePluginTest {
 
         verify(mockAudioManager).mode = AudioManager.MODE_IN_COMMUNICATION
         verify(mockAudioManager).isSpeakerphoneOn = true
-        verify(mockResult).success(null)
+        verify(mockResult).success(
+            mapOf(
+                "applied" to "speaker",
+                "available" to true
+            )
+        )
     }
 
     @Test
-    fun onMethodCall_setRoute_earpiece_disablesSpeakerphone() {
+    fun onMethodCall_setRoute_earpiece_returnsRouteResult() {
+        `when`(mockAudioManager.isSpeakerphoneOn).thenReturn(false)
+        `when`(mockAudioManager.isBluetoothScoOn).thenReturn(false)
+        `when`(mockAudioManager.isWiredHeadsetOn).thenReturn(false)
+
         plugin.onMethodCall(
             MethodCall("setRoute", mapOf("route" to "earpiece")),
             mockResult
@@ -80,7 +108,12 @@ internal class XueHuaSpeakerEarpieceTogglePluginTest {
 
         verify(mockAudioManager).mode = AudioManager.MODE_IN_COMMUNICATION
         verify(mockAudioManager).isSpeakerphoneOn = false
-        verify(mockResult).success(null)
+        verify(mockResult).success(
+            mapOf(
+                "applied" to "earpiece",
+                "available" to true
+            )
+        )
     }
 
     @Test
@@ -109,9 +142,38 @@ internal class XueHuaSpeakerEarpieceTogglePluginTest {
     }
 
     @Test
+    fun onMethodCall_setRoute_wrongTypeRoute_returnsInvalidArgumentError() {
+        plugin.onMethodCall(
+            MethodCall("setRoute", mapOf("route" to 1)),
+            mockResult
+        )
+
+        verify(mockResult).error(
+            eq("INVALID_ARGUMENT"),
+            eq("Route argument must be a string."),
+            eq(null)
+        )
+    }
+
+    @Test
     fun onMethodCall_unknownMethod_returnsNotImplemented() {
         plugin.onMethodCall(MethodCall("unknownMethod", null), mockResult)
 
         verify(mockResult).notImplemented()
+    }
+
+    @Test
+    fun onDetachedFromEngine_restoresSavedMode() {
+        `when`(mockAudioManager.mode).thenReturn(AudioManager.MODE_NORMAL)
+
+        plugin.onMethodCall(
+            MethodCall("setRoute", mapOf("route" to "speaker")),
+            mockResult
+        )
+
+        val binding = mock(FlutterPlugin.FlutterPluginBinding::class.java)
+        plugin.onDetachedFromEngine(binding)
+
+        verify(mockAudioManager).mode = AudioManager.MODE_NORMAL
     }
 }

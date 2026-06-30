@@ -1,17 +1,8 @@
 group = "com.kurban.xue_hua_speaker_earpiece_toggle"
-version = "1.0-SNAPSHOT"
+version = "1.0.0"
 
-buildscript {
-    val kotlinVersion = "2.3.20"
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath("com.android.tools.build:gradle:9.0.1")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-    }
+plugins {
+    id("com.android.library")
 }
 
 allprojects {
@@ -19,10 +10,6 @@ allprojects {
         google()
         mavenCentral()
     }
-}
-
-plugins {
-    id("com.android.library")
 }
 
 android {
@@ -37,10 +24,10 @@ android {
 
     sourceSets {
         getByName("main") {
-            java.srcDirs("src/main/kotlin")
+            java.directories.add("src/main/kotlin")
         }
         getByName("test") {
-            java.srcDirs("src/test/kotlin")
+            java.directories.add("src/test/kotlin")
         }
     }
 
@@ -73,5 +60,5 @@ kotlin {
 
 dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test")
-    testImplementation("org.mockito:mockito-core:5.0.0")
+    testImplementation("org.mockito:mockito-core:5.23.0")
 }

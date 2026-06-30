@@ -17,7 +17,7 @@
 
 ```yaml
 dependencies:
-  xue_hua_speaker_earpiece_toggle: ^1.0.0
+  xue_hua_speaker_earpiece_toggle: ^2.1.0
 ```
 
 然后执行：
@@ -179,18 +179,44 @@ final toggle = XueHuaSpeakerEarpieceToggle();
 ```dart
 final route = await toggle.getRoute();
 
-if (route == AudioOutputRoute.speaker) {
-  // 当前为外放扬声器。
-} else {
-  // 当前为听筒。
+switch (route) {
+  case AudioOutputRoute.speaker:
+    // 当前为外放扬声器。
+    break;
+  case AudioOutputRoute.earpiece:
+    // 当前为听筒。
+    break;
+  case AudioOutputRoute.external:
+    // 有线耳机、蓝牙、AirPlay 等外接设备。
+    break;
+  case AudioOutputRoute.unknown:
+    // 会话未激活或无法判断。
+    break;
 }
 ```
 
 ### 切换路由
 
 ```dart
-await toggle.setRoute(AudioOutputRoute.speaker);
-await toggle.setRoute(AudioOutputRoute.earpiece);
+final speakerResult = await toggle.setRoute(AudioOutputRoute.speaker);
+if (!speakerResult.available) {
+  // 系统实际生效的是 speakerResult.applied，例如外接设备优先。
+}
+
+final earpieceResult = await toggle.setRoute(AudioOutputRoute.earpiece);
+```
+
+仅 `AudioOutputRoute.speaker` 与 `AudioOutputRoute.earpiece` 可作为 `setRoute` 参数。
+
+### 监听路由变化
+
+```dart
+final subscription = toggle.onRouteChanged.listen((route) {
+  // 系统或其他 SDK 改变输出时触发。
+  // 订阅后会立即发出当前路由。
+});
+
+await subscription.cancel();
 ```
 
 ## API 参考
@@ -201,15 +227,35 @@ await toggle.setRoute(AudioOutputRoute.earpiece);
 |--------|------|
 | `speaker` | 通过设备外放扬声器输出音频。 |
 | `earpiece` | 通过听筒输出音频。 |
+| `external` | 有线耳机、蓝牙、AirPlay 等外接设备。 |
+| `unknown` | 无法确定路由（例如音频会话未激活）。 |
+
+### `RouteResult`
+
+`setRoute()` 的返回值。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `requested` | `AudioOutputRoute` | 调用方请求的路由。 |
+| `applied` | `AudioOutputRoute` | 平台应用变更后实际生效的路由。 |
+| `available` | `bool` | 请求是否完全生效（`applied == requested`）。 |
 
 ### `XueHuaSpeakerEarpieceToggle`
 
 | 方法 | 返回类型 | 说明 |
 |------|----------|------|
 | `getRoute()` | `Future<AudioOutputRoute>` | 获取当前原生音频路由。 |
-| `setRoute(AudioOutputRoute route)` | `Future<void>` | 切换原生音频路由。 |
+| `setRoute(AudioOutputRoute route)` | `Future<RouteResult>` | 切换原生音频路由并返回实际生效结果。 |
+| `onRouteChanged` | `Stream<AudioOutputRoute>` | 订阅时立即发出当前路由，系统变更时再次发出。 |
 
 上述方法在原生平台拒绝请求时可能抛出 `PlatformException`。
+
+## 从 1.x 迁移到 2.0.0
+
+1. **`setRoute` 现返回 `RouteResult`**，不再返回 `Future<void>`。请检查 `result.available`，并用 `result.applied` 更新 UI。
+2. **处理新增枚举值** — `getRoute()` 可能返回 `external` 与 `unknown`；仅 `speaker`、`earpiece` 可传入 `setRoute()`。
+3. **切换后建议重新读取** — 外接设备连接时，`applied` 可能与 `requested` 不一致。
+4. **会话行为** — 原生实现会减少不必要的 session/mode 修改，并在插件卸载时尽可能恢复借用前的状态。
 
 ## 示例应用
 
@@ -226,19 +272,21 @@ flutter run
 
 ### Android
 
-- 使用 `AudioManager.MODE_IN_COMMUNICATION` 与 `setSpeakerphoneOn(true|false)`。
-- `getRoute()` 在 `isSpeakerphoneOn == true` 时返回 `speaker`，否则返回 `earpiece`。
+- API 31+ 通过 `communicationDevice` 检测路由，旧版本回退到有线/BT 检测。
+- API 34+ 优先使用 `setCommunicationDevice()`，否则使用 `MODE_IN_COMMUNICATION` + `isSpeakerphoneOn`。
+- 插件卸载时恢复被修改的 `AudioManager.mode`。
 
 ### iOS
 
-- 激活 `AVAudioSession`，类别为 `.playAndRecord`，并启用 `.allowBluetooth` 选项。
-- 扬声器模式调用 `overrideOutputAudioPort(.speaker)`，听筒模式调用 `.none` 恢复听筒路由。
-- `getRoute()` 检查 `currentRoute.outputs`，若包含 `.builtInSpeaker` 则视为 `speaker`。
+- 根据 `AVAudioSession.currentRoute` 输出端口映射 `speaker` / `earpiece` / `external` / `unknown`。
+- 仅在类别/模式不匹配或需要激活会话时才配置 session。
+- 扬声器模式调用 `overrideOutputAudioPort(.speaker)`，听筒模式调用 `.none` 清除扬声器覆盖。
+- 插件卸载时恢复被修改的 session 配置。
 
 ## 已知限制
 
 - 本插件切换的是**扬声器与听筒**，不是通用的媒体播放路由。
-- 连接有线耳机或蓝牙耳机时，系统可能优先使用外接设备，此时 `getRoute()` 仍可能返回 `earpiece`，但实际声音并非从底部听筒输出。
+- 连接有线耳机或蓝牙耳机时，系统可能优先使用外接设备。此时 `getRoute()` 返回 `external`，`setRoute()` 在无法应用请求时返回 `available: false`。
 - 若同一应用中还有其他音频 SDK，可能会覆盖会话类别或输出端口，请与这些库协调音频会话的管理。
 - 请在真机上、处于通话中或正在播放音频时验证切换效果。
 

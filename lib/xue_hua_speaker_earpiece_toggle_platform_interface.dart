@@ -1,6 +1,7 @@
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'audio_output_route.dart';
+import 'route_result.dart';
 import 'xue_hua_speaker_earpiece_toggle_method_channel.dart';
 
 /// Platform contract for reading and switching speaker/earpiece routes.
@@ -39,7 +40,18 @@ abstract class XueHuaSpeakerEarpieceTogglePlatform extends PlatformInterface {
 
   /// Switches the audio output route on the native platform.
   /// 在原生平台上切换音频输出路由。
-  Future<void> setRoute(AudioOutputRoute route) {
+  ///
+  /// Only [AudioOutputRoute.speaker] and [AudioOutputRoute.earpiece] are
+  /// valid requests. Returns a [RouteResult] describing what was applied.
+  /// 仅 [AudioOutputRoute.speaker] 与 [AudioOutputRoute.earpiece] 可作为请求；
+  /// 返回 [RouteResult] 描述实际生效的路由。
+  Future<RouteResult> setRoute(AudioOutputRoute route) {
     throw UnimplementedError('setRoute() has not been implemented.');
+  }
+
+  /// Emits the current route when the OS or another SDK changes audio output.
+  /// 当系统或其他 SDK 改变音频输出时发出当前路由。
+  Stream<AudioOutputRoute> get onRouteChanged {
+    throw UnimplementedError('onRouteChanged has not been implemented.');
   }
 }
