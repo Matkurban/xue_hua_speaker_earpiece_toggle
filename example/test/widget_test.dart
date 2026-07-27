@@ -14,6 +14,9 @@ class WidgetTestPlatform extends XueHuaSpeakerEarpieceTogglePlatform {
   }
 
   @override
+  Future<void> restoreSession() async {}
+
+  @override
   Stream<AudioOutputRoute> get onRouteChanged =>
       Stream.value(AudioOutputRoute.speaker);
 }

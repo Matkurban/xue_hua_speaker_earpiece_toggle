@@ -66,6 +66,11 @@ class MethodChannelXueHuaSpeakerEarpieceToggle
     return parseRouteResult(route, result);
   }
 
+  @override
+  Future<void> restoreSession() async {
+    await methodChannel.invokeMethod<void>('restoreSession');
+  }
+
   /// Maps a platform route string to [AudioOutputRoute].
   /// 将平台路由字符串映射为 [AudioOutputRoute]。
   @visibleForTesting

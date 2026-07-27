@@ -29,6 +29,13 @@ class MockXueHuaSpeakerEarpieceTogglePlatform
     return routeResultToReturn ??
         RouteResult(requested: route, applied: route, available: true);
   }
+
+  int restoreSessionCallCount = 0;
+
+  @override
+  Future<void> restoreSession() async {
+    restoreSessionCallCount++;
+  }
 }
 
 void main() {
@@ -93,5 +100,15 @@ void main() {
 
     expect(result.applied, AudioOutputRoute.external);
     expect(result.available, isFalse);
+  });
+
+  test('restoreSession forwards to the platform', () async {
+    final plugin = XueHuaSpeakerEarpieceToggle();
+    final fakePlatform = MockXueHuaSpeakerEarpieceTogglePlatform();
+    XueHuaSpeakerEarpieceTogglePlatform.instance = fakePlatform;
+
+    await plugin.restoreSession();
+
+    expect(fakePlatform.restoreSessionCallCount, 1);
   });
 }

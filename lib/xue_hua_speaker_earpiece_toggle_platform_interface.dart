@@ -49,6 +49,12 @@ abstract class XueHuaSpeakerEarpieceTogglePlatform extends PlatformInterface {
     throw UnimplementedError('setRoute() has not been implemented.');
   }
 
+  /// Restores the pre-call audio session if this plugin changed it.
+  /// 若本插件曾改动通话音频会话，则恢复到改动前状态。
+  Future<void> restoreSession() {
+    throw UnimplementedError('restoreSession() has not been implemented.');
+  }
+
   /// Emits the current route when the OS or another SDK changes audio output.
   /// 当系统或其他 SDK 改变音频输出时发出当前路由。
   Stream<AudioOutputRoute> get onRouteChanged {

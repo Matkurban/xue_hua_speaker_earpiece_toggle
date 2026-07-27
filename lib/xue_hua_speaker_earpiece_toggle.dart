@@ -25,6 +25,12 @@ class XueHuaSpeakerEarpieceToggle {
     return XueHuaSpeakerEarpieceTogglePlatform.instance.setRoute(route);
   }
 
+  /// Restores the pre-call audio session if this plugin changed it.
+  /// 若本插件曾改动通话音频会话，则恢复到改动前状态。
+  Future<void> restoreSession() {
+    return XueHuaSpeakerEarpieceTogglePlatform.instance.restoreSession();
+  }
+
   /// Emits whenever the native audio route changes.
   /// 当原生音频路由发生变化时发出事件。
   ///

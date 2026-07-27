@@ -40,6 +40,10 @@ class XueHuaSpeakerEarpieceTogglePlugin :
         when (call.method) {
             "getRoute" -> result.success(controller.getRoute())
             "setRoute" -> handleSetRoute(call, result)
+            "restoreSession" -> {
+                controller.restoreSessionIfNeeded()
+                result.success(null)
+            }
             else -> result.notImplemented()
         }
     }

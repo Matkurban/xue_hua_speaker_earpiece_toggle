@@ -2,46 +2,46 @@ import AVFoundation
 import Flutter
 
 final class RouteChangeStreamHandler: NSObject, FlutterStreamHandler {
-  private let controller: AudioRouteController
-  private var eventSink: FlutterEventSink?
+    private let controller: AudioRouteController
+    private var eventSink: FlutterEventSink?
 
-  init(controller: AudioRouteController) {
-    self.controller = controller
-    super.init()
-  }
-
-  func onListen(
-    withArguments arguments: Any?,
-    eventSink events: @escaping FlutterEventSink
-  ) -> FlutterError? {
-    eventSink = events
-    controller.onRouteChanged = { [weak self] route in
-      self?.eventSink?(route)
+    init(controller: AudioRouteController) {
+        self.controller = controller
+        super.init()
     }
 
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(handleRouteChangeNotification),
-      name: AVAudioSession.routeChangeNotification,
-      object: nil
-    )
+    func onListen(
+        withArguments _: Any?,
+        eventSink events: @escaping FlutterEventSink
+    ) -> FlutterError? {
+        eventSink = events
+        controller.onRouteChanged = { [weak self] route in
+            self?.eventSink?(route)
+        }
 
-    events(controller.getRoute())
-    return nil
-  }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleRouteChangeNotification),
+            name: AVAudioSession.routeChangeNotification,
+            object: nil
+        )
 
-  func onCancel(withArguments arguments: Any?) -> FlutterError? {
-    NotificationCenter.default.removeObserver(
-      self,
-      name: AVAudioSession.routeChangeNotification,
-      object: nil
-    )
-    controller.onRouteChanged = nil
-    eventSink = nil
-    return nil
-  }
+        events(controller.getRoute())
+        return nil
+    }
 
-  @objc private func handleRouteChangeNotification() {
-    eventSink?(controller.getRoute())
-  }
+    func onCancel(withArguments _: Any?) -> FlutterError? {
+        NotificationCenter.default.removeObserver(
+            self,
+            name: AVAudioSession.routeChangeNotification,
+            object: nil
+        )
+        controller.onRouteChanged = nil
+        eventSink = nil
+        return nil
+    }
+
+    @objc private func handleRouteChangeNotification() {
+        eventSink?(controller.getRoute())
+    }
 }
