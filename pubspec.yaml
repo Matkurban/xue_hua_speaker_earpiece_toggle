@@ -1,6 +1,6 @@
 name: xue_hua_speaker_earpiece_toggle
 description: "A Flutter plugin to toggle between speaker and earpiece audio routes on Android and iOS."
-version: 1.2.0
+version: 1.2.1
 homepage: https://github.com/Matkurban/xue_hua_speaker_earpiece_toggle
 repository: https://github.com/Matkurban/xue_hua_speaker_earpiece_toggle
 issue_tracker: https://github.com/Matkurban/xue_hua_speaker_earpiece_toggle/issues
@@ -8,12 +8,12 @@ documentation: https://github.com/Matkurban/xue_hua_speaker_earpiece_toggle/blob
 
 environment:
   sdk: ^3.12.2
-  flutter: '>=3.3.0'
+  flutter: '>=3.44.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  plugin_platform_interface: ^2.0.2
+  plugin_platform_interface: ^2.1.8
 
 dev_dependencies:
   flutter_test:
