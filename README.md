@@ -17,7 +17,7 @@ Add the dependency to your app's `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  xue_hua_speaker_earpiece_toggle: ^2.1.0
+  xue_hua_speaker_earpiece_toggle: ^1.2.2
 ```
 
 Then run:
@@ -25,6 +25,22 @@ Then run:
 ```bash
 flutter pub get
 ```
+
+### Package skills
+
+This package ships Agent Skills for AI coding assistants. After adding the dependency, from your app project root:
+
+```bash
+dart run skills@ get
+```
+
+Install every discovered skill without prompts:
+
+```bash
+dart run skills@ get --all
+```
+
+Skills: `xue-hua-speaker-earpiece-toggle-usage` (setup and call workflows) and `xue-hua-speaker-earpiece-toggle-api` (every public type and member).
 
 ## Permissions and setup
 
@@ -206,7 +222,7 @@ if (!speakerResult.available) {
 final earpieceResult = await toggle.setRoute(AudioOutputRoute.earpiece);
 ```
 
-Only `AudioOutputRoute.speaker` and `AudioOutputRoute.earpiece` are valid `setRoute` requests.
+Only `AudioOutputRoute.speaker` and `AudioOutputRoute.earpiece` are valid `setRoute` requests. Guard with `isSwitchableAudioOutputRoute(route)` or `switchableAudioOutputRoutes` when the value might be `external` or `unknown`.
 
 ### Listen for route changes
 
@@ -220,6 +236,14 @@ final subscription = toggle.onRouteChanged.listen((route) {
 await subscription.cancel();
 ```
 
+### Restore the audio session
+
+Call this when the voice call ends if this plugin ran `setRoute`. It restores Android `AudioManager.mode` / iOS `AVAudioSession` only if this plugin changed them; otherwise it is a no-op. The native plugin also restores on detach.
+
+```dart
+await toggle.restoreSession();
+```
+
 ## API reference
 
 ### `AudioOutputRoute`
@@ -230,6 +254,13 @@ await subscription.cancel();
 | `earpiece` | Routes audio through the earpiece receiver. |
 | `external` | Wired headset, Bluetooth, AirPlay, or similar external output. |
 | `unknown` | Route cannot be determined (e.g. inactive audio session). |
+
+### `switchableAudioOutputRoutes` / `isSwitchableAudioOutputRoute`
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `switchableAudioOutputRoutes` | `Set<AudioOutputRoute>` | `{speaker, earpiece}` — the routes `setRoute` accepts. |
+| `isSwitchableAudioOutputRoute(AudioOutputRoute route)` | `bool` | Whether `route` may be passed to `setRoute`. |
 
 ### `RouteResult`
 
@@ -246,17 +277,21 @@ Returned by `setRoute()`.
 | Method | Return type | Description |
 |--------|-------------|-------------|
 | `getRoute()` | `Future<AudioOutputRoute>` | Returns the current native audio route. |
-| `setRoute(AudioOutputRoute route)` | `Future<RouteResult>` | Switches the native audio route and reports what was applied. |
-| `onRouteChanged` | `Stream<AudioOutputRoute>` | Emits on subscription and when the OS changes the active route. |
+| `setRoute(AudioOutputRoute route)` | `Future<RouteResult>` | Switches the native audio route and reports what was applied. Only `speaker` and `earpiece` are valid. |
+| `restoreSession()` | `Future<void>` | Restores the pre-call audio session if this plugin changed it. |
+| `onRouteChanged` | `Stream<AudioOutputRoute>` | Emits on subscription and when the OS, another SDK, or this plugin changes the active route. |
 
-Both methods may throw `PlatformException` when the native platform rejects the request.
+`getRoute`, `setRoute`, `restoreSession`, and `onRouteChanged` may throw or emit `PlatformException` when the native payload is invalid or the platform rejects the request.
 
-## Migrating from 1.x to 2.0.0
+## Migrating from 1.0.x
+
+Breaking changes shipped in **1.1.0** (the package is still 1.x; there is no 2.0.0).
 
 1. **`setRoute` now returns `RouteResult`** instead of `Future<void>`. Check `result.available` and use `result.applied` for UI state.
 2. **Handle new `AudioOutputRoute` values** — `external` and `unknown` can be returned from `getRoute()`. Only `speaker` and `earpiece` may be passed to `setRoute()`.
 3. **Re-read after switching** — when external devices are connected, `applied` may differ from `requested`.
-4. **Session behavior** — native implementations now avoid unnecessary session/mode changes and restore borrowed state on plugin detach where possible.
+4. **Session behavior** — native implementations avoid unnecessary session/mode changes and restore borrowed state on plugin detach where possible.
+5. **`restoreSession()` (1.2.0)** — call it when a voice call ends so the host can restore the session before plugin detach.
 
 ## Example app
 
@@ -275,14 +310,14 @@ flutter run
 
 - Detects routes via `communicationDevice` on API 31+, with legacy fallbacks for wired/BT headsets.
 - Applies speaker/earpiece using `setCommunicationDevice()` on API 34+ when available, otherwise `MODE_IN_COMMUNICATION` + `isSpeakerphoneOn`.
-- Saves and restores the previous `AudioManager.mode` on plugin detach when changed.
+- Saves and restores the previous `AudioManager.mode` on plugin detach when changed. Host apps can also call `restoreSession()` at call end.
 
 ### iOS
 
 - Detects routes from `AVAudioSession.currentRoute` output ports (`speaker`, `earpiece`, `external`, `unknown`).
 - Configures the session only when category/mode mismatch or activation is required before applying a route.
 - Uses `overrideOutputAudioPort(.speaker)` for speaker mode and `.none` to clear speaker override.
-- Restores borrowed session configuration on plugin teardown when the plugin changed it.
+- Restores borrowed session configuration on plugin teardown when the plugin changed it. Host apps can also call `restoreSession()` at call end.
 
 ## Known limitations
 

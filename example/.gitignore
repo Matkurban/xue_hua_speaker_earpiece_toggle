@@ -33,6 +33,12 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Installed Agent Skills (from `dart run skills@ get`)
+.agents/
+.config/dart_skills/
+.cursor/skills/
+.claude/skills/
+
 # Symbolication related
 app.*.symbols
 

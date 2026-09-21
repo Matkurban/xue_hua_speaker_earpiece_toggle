@@ -1,0 +1,14 @@
+# dart pub publish uses this file instead of nested .gitignore rules.
+# Keep example/build and other generated trees out of the pub archive.
+
+.codegraph/
+.dart_tool/
+.flutter-plugins-dependencies
+build/
+example/build/
+example/.dart_tool/
+example/.agents/
+example/.config/
+example/.cursor/
+example/.claude/
+**/doc/api/

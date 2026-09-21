@@ -17,7 +17,7 @@
 
 ```yaml
 dependencies:
-  xue_hua_speaker_earpiece_toggle: ^2.1.0
+  xue_hua_speaker_earpiece_toggle: ^1.2.2
 ```
 
 然后执行：
@@ -25,6 +25,22 @@ dependencies:
 ```bash
 flutter pub get
 ```
+
+### Package skills
+
+本包装有面向 AI 编程助手的 Agent Skills。添加依赖后，在**宿主应用**项目根目录执行：
+
+```bash
+dart run skills@ get
+```
+
+无需交互、安装全部已发现的 skills：
+
+```bash
+dart run skills@ get --all
+```
+
+包含 `xue-hua-speaker-earpiece-toggle-usage`（配置与通话流程）和 `xue-hua-speaker-earpiece-toggle-api`（全部公开类型与成员）。
 
 ## 权限与配置
 
@@ -206,7 +222,7 @@ if (!speakerResult.available) {
 final earpieceResult = await toggle.setRoute(AudioOutputRoute.earpiece);
 ```
 
-仅 `AudioOutputRoute.speaker` 与 `AudioOutputRoute.earpiece` 可作为 `setRoute` 参数。
+仅 `AudioOutputRoute.speaker` 与 `AudioOutputRoute.earpiece` 可作为 `setRoute` 参数。当路由值可能是 `external` 或 `unknown` 时，先用 `isSwitchableAudioOutputRoute(route)` 或 `switchableAudioOutputRoutes` 判断。
 
 ### 监听路由变化
 
@@ -219,6 +235,14 @@ final subscription = toggle.onRouteChanged.listen((route) {
 await subscription.cancel();
 ```
 
+### 恢复音频会话
+
+若本插件执行过 `setRoute`，请在语音通话结束时调用。仅当本插件改动过 Android `AudioManager.mode` / iOS `AVAudioSession` 时才会恢复，否则为空操作。原生插件在卸载时也会执行同样的恢复。
+
+```dart
+await toggle.restoreSession();
+```
+
 ## API 参考
 
 ### `AudioOutputRoute`
@@ -229,6 +253,13 @@ await subscription.cancel();
 | `earpiece` | 通过听筒输出音频。 |
 | `external` | 有线耳机、蓝牙、AirPlay 等外接设备。 |
 | `unknown` | 无法确定路由（例如音频会话未激活）。 |
+
+### `switchableAudioOutputRoutes` / `isSwitchableAudioOutputRoute`
+
+| 符号 | 类型 | 说明 |
+|------|------|------|
+| `switchableAudioOutputRoutes` | `Set<AudioOutputRoute>` | `{speaker, earpiece}`，即 `setRoute` 可接受的路由。 |
+| `isSwitchableAudioOutputRoute(AudioOutputRoute route)` | `bool` | `route` 是否可作为 `setRoute` 的参数。 |
 
 ### `RouteResult`
 
@@ -245,17 +276,21 @@ await subscription.cancel();
 | 方法 | 返回类型 | 说明 |
 |------|----------|------|
 | `getRoute()` | `Future<AudioOutputRoute>` | 获取当前原生音频路由。 |
-| `setRoute(AudioOutputRoute route)` | `Future<RouteResult>` | 切换原生音频路由并返回实际生效结果。 |
-| `onRouteChanged` | `Stream<AudioOutputRoute>` | 订阅时立即发出当前路由，系统变更时再次发出。 |
+| `setRoute(AudioOutputRoute route)` | `Future<RouteResult>` | 切换原生音频路由并返回实际生效结果。仅 `speaker` 与 `earpiece` 有效。 |
+| `restoreSession()` | `Future<void>` | 若本插件曾改动通话音频会话，则恢复到改动前状态。 |
+| `onRouteChanged` | `Stream<AudioOutputRoute>` | 订阅时立即发出当前路由；系统、其他 SDK 或本插件改变输出时再次发出。 |
 
-上述方法在原生平台拒绝请求时可能抛出 `PlatformException`。
+`getRoute`、`setRoute`、`restoreSession` 与 `onRouteChanged` 在原生负载无效或平台拒绝请求时可能抛出或发出 `PlatformException`。
 
-## 从 1.x 迁移到 2.0.0
+## 从 1.0.x 迁移
+
+破坏性变更为 **1.1.0**（本包仍是 1.x，没有 2.0.0）。
 
 1. **`setRoute` 现返回 `RouteResult`**，不再返回 `Future<void>`。请检查 `result.available`，并用 `result.applied` 更新 UI。
 2. **处理新增枚举值** — `getRoute()` 可能返回 `external` 与 `unknown`；仅 `speaker`、`earpiece` 可传入 `setRoute()`。
 3. **切换后建议重新读取** — 外接设备连接时，`applied` 可能与 `requested` 不一致。
 4. **会话行为** — 原生实现会减少不必要的 session/mode 修改，并在插件卸载时尽可能恢复借用前的状态。
+5. **`restoreSession()`（1.2.0）** — 语音通话结束时调用，以便在插件卸载前由宿主恢复会话。
 
 ## 示例应用
 
@@ -274,14 +309,14 @@ flutter run
 
 - API 31+ 通过 `communicationDevice` 检测路由，旧版本回退到有线/BT 检测。
 - API 34+ 优先使用 `setCommunicationDevice()`，否则使用 `MODE_IN_COMMUNICATION` + `isSpeakerphoneOn`。
-- 插件卸载时恢复被修改的 `AudioManager.mode`。
+- 插件卸载时恢复被修改的 `AudioManager.mode`。宿主也可在通话结束时调用 `restoreSession()`。
 
 ### iOS
 
 - 根据 `AVAudioSession.currentRoute` 输出端口映射 `speaker` / `earpiece` / `external` / `unknown`。
 - 仅在类别/模式不匹配或需要激活会话时才配置 session。
 - 扬声器模式调用 `overrideOutputAudioPort(.speaker)`，听筒模式调用 `.none` 清除扬声器覆盖。
-- 插件卸载时恢复被修改的 session 配置。
+- 插件卸载时恢复被修改的 session 配置。宿主也可在通话结束时调用 `restoreSession()`。
 
 ## 已知限制
 

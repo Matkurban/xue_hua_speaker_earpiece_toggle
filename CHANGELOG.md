@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.2] - 2026-09-21
+
+### Added
+
+- Package Agent Skills under `skills/` (`xue-hua-speaker-earpiece-toggle-usage` and `xue-hua-speaker-earpiece-toggle-api`) for `dart run skills@ get`.
+- Add `.pubignore` so generated `example/build` is not packed into the pub archive.
+
+### Documentation
+
+- Correct the installation constraint in English and Chinese READMEs from `^2.1.0` to `^1.2.2`.
+- Document `restoreSession()`, `switchableAudioOutputRoutes`, and `isSwitchableAudioOutputRoute`.
+- Retitle the 1.1.0 migration section (package is still 1.x; there is no 2.0.0).
+
 ## [1.2.1] - 2026-08-21
 
 - The Gradle tool version has been downgraded to 8.13.2.
