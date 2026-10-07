@@ -28,7 +28,7 @@ Minimum: add the dependency and `flutter pub get`.
 
 ```yaml
 dependencies:
-  xue_hua_speaker_earpiece_toggle: ^1.2.2
+  xue_hua_speaker_earpiece_toggle: ^1.2.3
 ```
 
 **Android:** the plugin declares `MODIFY_AUDIO_SETTINGS` (normal permission, no runtime prompt). Gradle merges it into the host app. Host apps that capture mic still declare `RECORD_AUDIO` themselves.

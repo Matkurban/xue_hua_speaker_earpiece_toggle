@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.3] - 2026-10-08
+
+### Changed
+
+- Upgrade the Android build to Android Gradle Plugin 9.1.0, Gradle 9.3.1, and Kotlin 2.4.0, matching the Flutter 3.47 toolchain.
+
 ## [1.2.2] - 2026-09-21
 
 ### Added

@@ -17,7 +17,7 @@
 
 ```yaml
 dependencies:
-  xue_hua_speaker_earpiece_toggle: ^1.2.2
+  xue_hua_speaker_earpiece_toggle: ^1.2.3
 ```
 
 然后执行：
