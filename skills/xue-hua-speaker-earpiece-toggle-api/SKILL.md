@@ -48,7 +48,7 @@ Requests speaker or earpiece on the native platform.
 - **Returns:** `RouteResult` with `requested` equal to the argument, `applied` from native, `available` from native (`applied == requested` on the native side).
 - **Throws before the channel call:** `PlatformException(code: INVALID_ROUTE)` when `!isSwitchableAudioOutputRoute(route)` — message `Only speaker and earpiece routes can be set: ${route.name}`.
 - **Throws after the channel call:** `INVALID_ROUTE_RESULT` if the native map is missing `applied` (`String`) or `available` (`bool`); native `INVALID_ARGUMENT`, `INVALID_ROUTE`, or `AUDIO_ROUTE_ERROR` (see [exceptions.md](references/exceptions.md)).
-- **Side effects:** Android may set `AudioManager` to `MODE_IN_COMMUNICATION`; iOS may set category `.playAndRecord`, mode `.voiceChat`, option `.allowBluetooth`, activate the session, then `overrideOutputAudioPort(.speaker)` or `.none`.
+- **Side effects:** Android may set `AudioManager` to `MODE_IN_COMMUNICATION`; iOS may set category `.playAndRecord`, mode `.voiceChat`, option `.allowBluetoothHFP`, activate the session, then `overrideOutputAudioPort(.speaker)` or `.none`.
 
 ### `Future<void> restoreSession()`
 

@@ -14,7 +14,7 @@ final class SessionCoordinator {
 
     private let targetCategory = AVAudioSession.Category.playAndRecord
     private let targetMode = AVAudioSession.Mode.voiceChat
-    private let targetOptions: AVAudioSession.CategoryOptions = [.allowBluetooth]
+    private let targetOptions: AVAudioSession.CategoryOptions = [.allowBluetoothHFP]
 
     init(session: AudioSessionProtocol) {
         self.session = session
@@ -32,7 +32,7 @@ final class SessionCoordinator {
         let needsCategoryChange =
             session.category != targetCategory
                 || session.mode != targetMode
-                || !session.categoryOptions.contains(.allowBluetooth)
+                || !session.categoryOptions.contains(.allowBluetoothHFP)
 
         if needsCategoryChange {
             try session.setCategory(targetCategory, mode: targetMode, options: targetOptions)

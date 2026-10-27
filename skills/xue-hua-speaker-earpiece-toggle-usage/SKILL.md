@@ -33,7 +33,7 @@ dependencies:
 
 **Android:** the plugin declares `MODIFY_AUDIO_SETTINGS` (normal permission, no runtime prompt). Gradle merges it into the host app. Host apps that capture mic still declare `RECORD_AUDIO` themselves.
 
-**iOS:** `setRoute` uses `AVAudioSession` category `.playAndRecord`, mode `.voiceChat`, option `.allowBluetooth`. Add `NSMicrophoneUsageDescription` when the app captures microphone audio. Add `UIBackgroundModes` → `audio` only for background VoIP.
+**iOS:** `setRoute` uses `AVAudioSession` category `.playAndRecord`, mode `.voiceChat`, option `.allowBluetoothHFP`. Add `NSMicrophoneUsageDescription` when the app captures microphone audio. Add `UIBackgroundModes` → `audio` only for background VoIP.
 
 ## Workflows
 
