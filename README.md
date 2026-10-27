@@ -17,7 +17,7 @@ Add the dependency to your app's `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  xue_hua_speaker_earpiece_toggle: ^1.2.3
+  xue_hua_speaker_earpiece_toggle: ^1.2.4
 ```
 
 Then run:

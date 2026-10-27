@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.4] - 2026-10-28
+
+### Changed
+
+- Expand example `integration_test` coverage for `getRoute` / `setRoute` / `onRouteChanged` / `restoreSession`, and add `example/test_driver/integration_test.dart` for `flutter drive`.
+- iOS: replace deprecated `AVAudioSession.CategoryOptions.allowBluetooth` with `.allowBluetoothHFP` in `SessionCoordinator` (clears Xcode deprecation warnings).
+- Example iOS: raise `IPHONEOS_DEPLOYMENT_TARGET` from 13.0 to 15.0 for the current Flutter toolchain.
+- Align package skill docs with `.allowBluetoothHFP`.
+
 ## [1.2.3] - 2026-10-08
 
 ### Changed
